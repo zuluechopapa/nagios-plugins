@@ -1,0 +1,65 @@
+#!/bin/bash
+
+mark=/var/run/nagiosck/rebootmarker
+rebck=/var/run/reboot-required
+#/etc/update-motd.d/98-reboot-required
+
+markdir=`echo $mark | sed -e "s/\/[a-z]*$//"`
+now=`date +%s`
+mkdir -p $markdir
+if [ $? -ne 0 ]
+then
+   message=`echo $message " unable to create markdir $markdir, state will not be kept"`
+fi
+
+#for arg
+#do
+#  if [ $arg == "-c" ]
+#  then
+#  fi
+#done
+
+#86400 days to seconds.
+time=432000 #5days in seconds.
+
+pastchk=0
+if [ -f $mark ]
+then
+   pastchk=`cat $mark`
+fi
+
+return=3
+ST="UNKNOWN"
+SA="Reboot state unknown"
+if [ -f $rebck ]
+then
+  return=1
+  ST="WARNING"
+  SA="Reboot needed"
+  if [ $pastchk -eq 0 ]
+  then
+    message=`echo $message " markfile created"`
+    echo $now > $mark
+  else
+    #86400 days to seconds.
+    diff=`expr $now - $pastchk`
+    if [ $diff -gt 432000 ]
+    then
+      return=2
+      ST="CRITICAL"
+      SA="Reboot overdue"
+      message=`echo $message " markfile age over 5 days"`
+    fi
+  fi
+else
+  if [ $pastchk -ne 0 ]
+  then
+    rm $mark
+    message=`echo $message " markfile removed"`
+  fi
+  return=0
+  ST="OK"
+  SA="Reboot not needed"
+fi
+
+echo "REBOOT $ST: $SA | additional;$message"
