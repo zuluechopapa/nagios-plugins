@@ -1,0 +1,10 @@
+
+freedisk is all done in bash shell, it's configured for linux systems out
+of the gate.   handles (at least so far) 
+   a) making sure it checks only actual filesystems, not tmpfs or loops
+      or whatever.
+   b) checking critical/warning level checking
+   c) one of the things that I think is most important - overriding 
+      alert start on Very Large Filesystems that go over an X% state
+      but still have some large number of megabyte left free 
+      (configurables within the script)

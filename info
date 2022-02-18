@@ -1,0 +1,4 @@
+these are nagios plugins, mainly designed to work from nrpe, 
+most don't really take any commandline options (nrpe is sort of 
+a pain about passing them), they're intended to be an 'all across
+the enterprise' sort of set of plugins.
