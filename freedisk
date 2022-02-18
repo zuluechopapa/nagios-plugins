@@ -1,0 +1,68 @@
+#!/bin/sh
+#Plugin Return Code      Service State   Host State
+#0       OK      UP
+#1       WARNING UP or DOWN/UNREACHABLE*
+#2       CRITICAL        DOWN/UNREACHABLE
+#3       UNKNOWN DOWN/UNREACHABLE
+
+
+wpct=75
+cpct=85
+minfree=3000 #something like 1-4 g, probably.
+
+Aret=0
+fsmsg="fs check"
+
+for fs in `/usr/bin/df  -m  |  \
+     egrep -v "[a-z].*[a-z]:/.* |^/dev/loop|^tmpfs |^udev|^Filesystem" | \
+            awk '{print $4 ":" $5 ":" $6}'`
+
+do
+  ret=0
+  met=0
+  free=`echo $fs | cut -d: -f1 | sed -e "s/\%//"`
+  point=`echo $fs | cut -d: -f3 | sed -e "s/\%//"`
+  pct=`echo $fs | cut -d: -f2 | sed -e "s/\%//"`
+  if [ $pct -gt $wpct ]
+  then
+    ret=1
+    fsmsg=`echo "$fsmsg, $point fs $pct% used"`
+    met=1
+    if [ $pct -gt $cpct ]
+    then
+      ret=2
+      fsmsg=`echo "$fsmsg, $point fs $pct% used"`
+    fi
+  fi
+  if [ $ret -gt 0 ] 
+  then
+    if [ $free -gt $minfree ]
+    then
+      #echo it's ok, clear this warning.
+      fsmsg=`echo "$fsmsg (cancel err $free M free)"`
+      ret=0
+    fi
+  fi
+  if [ $ret -gt $Aret ]
+  then
+    Aret=$ret
+  fi
+done
+
+case $Aret in
+  0)
+    status="OK"
+    ;;
+  1)
+    status="WARN"
+    ;;
+  2)
+    status="CRITICAL"
+    ;;
+  3)
+    status="UNKNOWN"
+    ;;
+esac
+
+echo "GENFS $status check : $fsmsg"
+exit $Aret
